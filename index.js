@@ -46,17 +46,30 @@ class Relayer {
   const contract = await eos.contract('blockflare')
 
   setInterval(async () => {
-    const accountIndex = 0;
+    const accountIndex = 0
     const account = (await eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[accountIndex]
-    console.log(`Your account: ${account.owner}`);
 
-    const relay = (await eos.getTableRows(true, 'blockflare', 'blockflare', 'reque', 0, account.relaying, 1000)).rows.filter(r => r.id === account.relaying)[0]
+    const relay = (await eos.getTableRows(true, 'blockflare', 'blockflare', 'reqias', 0, account.relaying, 1000)).rows.filter(r => r.id === account.relaying)[0]
     if (relay) {
-      await contract.respond({relayer: "blockflare", response: "It's a response!"}, {authorization: ['blockflare']})
+      const request = JSON.parse(relay.request)
+      const response = {
+        ok: false,
+        error: null
+      }
 
-      console.log(`Routed tx. ID ${relay.id} through your host ${account.relayAddress} to API located at "${relay.url}" w/ neighbouring nodes: [${relay.relayers.join(", ")}].`)
+      // PROTOTYPE: Handle just a login request for now.
+      if (request.username === 'Kenta' && request.password === 'secret') {
+        response.user_id = 1;
+        response.ok = true
+      } else response.error = 'Invalid username or password.'
+
+      await contract.respond({
+        relayer: 'blockflare',
+        response: JSON.stringify(response)
+      }, {authorization: ['blockflare']})
+
+      console.log(`Routed tx. ID ${relay.id} through your host ${account.relayAddress} to API located at "${relay.url}" w/ neighbouring nodes: [${relay.relayers.join(', ')}].`)
     }
-    console.log()
   }, 1000)
 
   // let res

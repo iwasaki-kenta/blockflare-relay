@@ -7,7 +7,7 @@
                     <div class="space-partners" style="display: flex; flex-direction: row;">
                         <div style="display: flex; flex-direction: column; text-align: left;">
                             <span class="title">Account</span>
-                            <span>{{account && account.owner || "Loading..."}}</span>
+                            <span>{{account && account.owner || 'Loading...'}}</span>
                         </div>
 
                         <div style="display: flex; flex-direction: column; text-align: left;">
@@ -54,7 +54,8 @@
             </div>
             <div class="grid-log" style="width: 600px;">
                 <div style="display: flex; width: 100%; height: 100%; overflow-y: scroll;">
-                    <ul class="space-list" style="height: 700px; max-height: 700px; padding: 2em; word-wrap: break-word; overflow-wrap: break-word; overflow: auto;">
+                    <ul class="space-list"
+                        style="height: 700px; max-height: 700px; padding: 2em; word-wrap: break-word; overflow-wrap: break-word; overflow: auto;">
                         <li v-for="log in logs">
                             <code style="font-size: 1.5em;">{{log}}</code>
                         </li>
@@ -92,9 +93,8 @@
           nonce: 0
         },
         mining: null,
-        account: {
-
-        }
+        awaiting: null,
+        account: {}
       }
     },
     components: {},
@@ -105,11 +105,7 @@
       })
 
       this.contract = await this.eos.contract('blockflare')
-
-      setInterval(async () => {
-        this.account = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[0]
-        console.log(this.account)
-      }, 1000)
+      this.account = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[0]
     },
     methods: {
       relay() {
@@ -121,7 +117,9 @@
         return difficultyString
       },
       log(message) {
-        this.logs.push(`[${new Date().getHours()}:${new Date().getMinutes()} ${new Date().getHours() > 12 ? "PM" : "AM"}] ${message}`)
+        if (this.logs.length >= 7)
+          this.logs = this.logs.slice(1)
+        this.logs.push(`[${new Date().getHours()}:${new Date().getMinutes()} ${new Date().getHours() > 12 ? 'PM' : 'AM'}] ${message}`)
       },
       delegateProof(data) {
         if (!this.mining) {
@@ -131,6 +129,8 @@
           let serialized = data + nonce
           let proof_of_work = ecc.sha256(serialized)
 
+          let now = new Date().getTime()
+
           this.mining = setInterval(async () => {
             if (proof_of_work.slice(0, this.mine.difficulty) !== prefix) {
               nonce = Math.random() * 100000000000
@@ -139,18 +139,19 @@
             } else {
               clearInterval(this.mining)
 
-              this.log(`Requesting for login verification w/ proof-of-work "${proof_of_work}"...`)
+              this.log(`Requesting for login verification w/ proof-of-work "${proof_of_work}" made in ${new Date().getTime() - now}ms...`)
+
+              // TODO: Replace with threshold signature of actual URL.
 
               let res = await this.contract.request({
                 sender: 'blockflare',
-                url: 'google.com',
+                url: 'localhost:9999/login',
                 message: data,
                 nonce: nonce.toString(),
                 proof: proof_of_work
               }, {authorization: ['blockflare']})
 
               this.log(`Transaction signed and broadcasted on block ${res.transaction.transaction.ref_block_num}.`)
-              console.log(res)
 
               const relay = 'localhost:3000'
 
@@ -159,11 +160,26 @@
                 relayAddress: relay
               }, {authorization: ['blockflare']})
 
-              this.log(`Reached relay(s) ${this.connected.join(", ")}. Routing API request...`)
+              this.log(`Reached relay(s) ${this.connected.join(', ')}. Routing API request...`)
 
-              console.log(res)
+              this.account = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[0]
 
-              this.mining = null
+              this.awaiting = setInterval(
+                async () => {
+                  this.log('Awaiting response...')
+
+                  if (this.account) {
+                    const tx = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'reqias', 0, this.account.relaying, 1000)).rows.filter(r => r.id === this.account.relaying)[0]
+                    if (tx && tx.response.length > 0) {
+                      this.log(`Received response from relay node(s) "${tx.sender}": ${tx.response}`)
+                      clearInterval(this.awaiting)
+
+                      this.awaiting = null
+                      this.mining = null
+                    }
+                  }
+                }, 1000
+              )
             }
 
             this.mine.proof_of_work = proof_of_work
