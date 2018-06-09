@@ -172,6 +172,12 @@
                     const tx = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'reqias', 0, this.account.relaying, 1000)).rows.filter(r => r.id === this.account.relaying)[0]
                     if (tx && tx.response.length > 0) {
                       this.log(`Received response from relay node(s) "${tx.sender}": ${tx.response}`)
+                      const response = JSON.parse(tx.response);
+                      if (response.ok) {
+                        this.$swal("Hello!", "You have successfully logged in!", "success")
+                      } else {
+                        this.$swal("Whoops!", response.error, "error")
+                      }
                       clearInterval(this.awaiting)
 
                       this.awaiting = null

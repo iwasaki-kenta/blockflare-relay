@@ -10,7 +10,8 @@
     "eosjs": "^14.1.1",
     "eosjs-ecc": "^4.0.1",
     "vue": "^2.5.16",
-    "vue-styled-components": "^1.2.3"
+    "vue-styled-components": "^1.2.3",
+    "vue-sweetalert2": "^1.2.4"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.0.0-beta.15",
