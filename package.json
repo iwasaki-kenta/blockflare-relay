@@ -1,0 +1,20 @@
+{
+  "name": "blockflare-router",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "babel-node --presets=env,stage-2 --plugins=transform-runtime index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "eosjs": "^14.1.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "babel-register": "^6.26.0"
+  }
+}
