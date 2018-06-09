@@ -8,7 +8,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "eosjs": "^14.1.0"
+    "eosjs": "^14.1.0",
+    "eosjs-ecc": "^4.0.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
