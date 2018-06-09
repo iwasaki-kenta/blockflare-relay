@@ -49,7 +49,7 @@ class Relayer {
     const accountIndex = 0
     const account = (await eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[accountIndex]
 
-    const relay = (await eos.getTableRows(true, 'blockflare', 'blockflare', 'reqias', 0, account.relaying, 1000)).rows.filter(r => r.id === account.relaying)[0]
+    const relay = (await eos.getTableRows(true, 'blockflare', 'blockflare', 'reqrws', 0, account.relaying, 1000)).rows.filter(r => r.id === account.relaying)[0]
     if (relay) {
       const request = JSON.parse(relay.request)
       const response = {
@@ -70,7 +70,7 @@ class Relayer {
 
       console.log(`Routed tx. ID ${relay.id} through your host ${account.relayAddress} to API located at "${relay.url}" w/ neighbouring nodes: [${relay.relayers.join(', ')}].`)
     }
-  }, 1000)
+  }, 100)
 
   // let res
   //

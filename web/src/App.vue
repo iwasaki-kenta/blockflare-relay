@@ -7,12 +7,17 @@
                     <div class="space-partners" style="display: flex; flex-direction: row;">
                         <div style="display: flex; flex-direction: column; text-align: left;">
                             <span class="title">Account</span>
-                            <span>{{account && account.owner || 'Loading...'}}</span>
+                            <span>[{{account && account.owner || 'Loading...'}}]</span>
                         </div>
 
                         <div style="display: flex; flex-direction: column; text-align: left;">
                             <span class="title">Relay Nodes</span>
                             <span>[{{connected.join(', ')}}]</span>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <span class="title">Endpoints</span>
+                            <span>[{{endpoints && `${endpoints.length} API route(s) registered.` || 'Loading...'}}]</span>
                         </div>
                     </div>
                 </div>
@@ -62,9 +67,14 @@
                     </ul>
                 </div>
             </div>
-            <div class="grid-footer" style="margin-top: 1.25em; height: 80px;">
+            <div class="grid-footer" style="margin-top: 1.25em; height: 80px; padding-left: 2em;">
                 <div style="display: flex; align-items: center; height: 100%;">
-
+                    <div class="space-partners" style="display: flex; flex-direction: row;">
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <span class="title">Relayer Balance</span>
+                            <span>[{{account && account.balance || 'Loading...'}} BLR]</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -94,7 +104,8 @@
         },
         mining: null,
         awaiting: null,
-        account: {}
+        account: {},
+        endpoints: []
       }
     },
     components: {},
@@ -105,7 +116,13 @@
       })
 
       this.contract = await this.eos.contract('blockflare')
-      this.account = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[0]
+
+      setInterval(async () => {
+        this.account = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'ledger')).rows[0]
+
+        this.endpoints = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'endpoints')).rows
+      }, 500)
+
     },
     methods: {
       relay() {
@@ -169,14 +186,14 @@
                   this.log('Awaiting response...')
 
                   if (this.account) {
-                    const tx = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'reqias', 0, this.account.relaying, 1000)).rows.filter(r => r.id === this.account.relaying)[0]
+                    const tx = (await this.eos.getTableRows(true, 'blockflare', 'blockflare', 'reqrws', 0, this.account.relaying, 1000)).rows.filter(r => r.id === this.account.relaying)[0]
                     if (tx && tx.response.length > 0) {
                       this.log(`Received response from relay node(s) "${tx.sender}": ${tx.response}`)
-                      const response = JSON.parse(tx.response);
+                      const response = JSON.parse(tx.response)
                       if (response.ok) {
-                        this.$swal("Hello!", "You have successfully logged in!", "success")
+                        this.$swal('Hello!', 'You have successfully logged in!', 'success')
                       } else {
-                        this.$swal("Whoops!", response.error, "error")
+                        this.$swal('Whoops!', response.error, 'error')
                       }
                       clearInterval(this.awaiting)
 
@@ -184,7 +201,7 @@
                       this.mining = null
                     }
                   }
-                }, 1000
+                }, 250
               )
             }
 
