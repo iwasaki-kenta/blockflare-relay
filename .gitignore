@@ -1,2 +1,5 @@
 node_modules/
 .idea/
+
+web/node_modules/
+web/dist/
